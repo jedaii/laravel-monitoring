@@ -1,0 +1,32 @@
+before_script:
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+stages:    
+  - build
+  - deploy
+
+buildg:
+  stage: build
+  tags:
+    - build
+  only:
+    - dev
+  script:
+    - docker build -t "${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHA" -f Dockerfile .
+    - docker push "${CI_REGISTRY_IMAGE}:$CI_COMMIT_SHA"
+
+deploy:
+  stage: deploy
+  tags:
+    - dev
+  script:
+    - export MYUSER=user
+    - export CONTAINER_PREFIX=travellist
+    - chmod +x env-setup.sh && ./env-setup.sh
+    - docker stop $(docker ps -a | grep ${CONTAINER_PREFIX}_ | awk '{print $1}') || true
+    - docker rm $(docker ps -a | grep ${CONTAINER_PREFIX}_ | awk '{print $1}') || true
+    - docker volume rm $(docker volume ls | grep ${CONTAINER_PREFIX}_ | awk '{print $1}') || true
+    - docker compose -p $CONTAINER_PREFIX -f docker-compose.yml up -d
+    - docker exec ${CONTAINER_PREFIX}_app composer update
+    - docker exec ${CONTAINER_PREFIX}_app composer install
+    - docker exec ${CONTAINER_PREFIX}_app php artisan key:generate
