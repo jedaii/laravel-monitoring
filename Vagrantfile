@@ -5,17 +5,27 @@ Vagrant.configure("2") do |config|
   
     # Every Vagrant development environment requires a box. You can search for
     # boxes at https://vagrantcloud.com/search.
-    config.vm.box = "bento/ubuntu-20.04"
-    config.vm.hostname = "app.host"
-  
-    config.vm.provision "shell", inline: <<-SHELL
-      sudo apt update
-      sudo apt -y install python3-pip
-      python3 -m pip install ansible
-    SHELL
-    config.vm.provision "ansible" do |ansible|
-      ansible.playbook = "provision/deploy.yml"
-      ansible.galaxy_role_file = "provision/requirements.yml"
+    config.vm.define "app" do |app|
+      app.vm.box = "bento/ubuntu-20.04"
+      app.vm.hostname = "app.host"
+    
+      app.vm.provision "shell", inline: <<-SHELL
+        sudo apt update
+        sudo apt -y install python3-pip
+        python3 -m pip install ansible docker docker-compose
+        cd /vagrant
+        ansible-galaxy install -r ./provision/requirements.yml
+      SHELL
+      app.vm.provision "ansible" do |ansible|
+        ansible.inventory_path = "provision/hosts"
+        ansible.playbook = "provision/deploy.yml"
+        ansible.groups = {
+          "app" => ["app"]
+        }
+        # ansible.galaxy_role_file = "provision/requirements.yml"
+        # ansible.verbose = "vvv"
+      end
+      config.vm.network "public_network", ip: "192.168.1.100"
     end
   
     # Disable automatic box update checking. If you disable this, then
@@ -41,7 +51,6 @@ Vagrant.configure("2") do |config|
     # Create a public network, which generally matched to bridged network.
     # Bridged networks make the machine appear as another physical device on
     # your network.
-    config.vm.network "public_network", ip: "192.168.1.100"
   
     # Provider-specific configuration so you can fine-tune various
     # backing providers for Vagrant. These expose provider-specific options.

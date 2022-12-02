@@ -1,4 +1,20 @@
 ---
-- hosts: all
+- hosts: app
   roles:
   - docker_role
+
+  tasks:
+    - name: Tear down existing services
+      become: true
+      docker_compose:
+        project_src: /vagrant
+        state: absent
+
+    - name: Create and start services
+      become: true
+      docker_compose:
+        project_src: /vagrant
+      register: output
+
+    - ansible.builtin.debug:
+        var: output

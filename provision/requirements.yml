@@ -1,3 +1,8 @@
-- src: git+https://gitlab.com/somedevops/ansible-roles/docker_ansible_role.git
-  version: main
-  name: docker_role
+---
+roles:
+  - src: git+https://gitlab.com/somedevops/ansible-roles/docker_ansible_role.git
+    version: main
+    name: docker_role
+collections:
+  - name: community.docker
+    version: 3.2.1
